@@ -3,4 +3,3 @@ Flask_CORS
 flask_restful
 numpy
 pandas
-sqlite3
