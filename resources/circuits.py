@@ -10,7 +10,9 @@ class CircuitList(Resource):
         con = sq.connect("stats.db")
         cur = con.cursor()
         cur.execute(
-            "SELECT distinct circuit from schools where circuit is not null")
+            """SELECT distinct circuit from schools 
+            where circuit is not null
+            and circuit <> 'National'""")
         res = cur.fetchall()
         paths = [
             {
