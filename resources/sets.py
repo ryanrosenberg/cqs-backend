@@ -7,7 +7,7 @@ import utils
 
 class AllEditors(Resource):
     def get(self):
-        editors = pd.read_csv('https://github.com/ryanrosenberg/cqs-backend/blob/master/all-editors.csv').replace({np.nan:None}).to_dict(orient='records')
+        editors = pd.read_csv('https://raw.githubusercontent.com/ryanrosenberg/cqs-backend/master/all-editors.csv').replace({np.nan:None}).to_dict(orient='records')
 
         return editors
 
