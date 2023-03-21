@@ -12,7 +12,8 @@ class CircuitList(Resource):
         cur.execute(
             """SELECT distinct circuit from schools 
             where circuit is not null
-            and circuit <> 'National'""")
+            and circuit <> 'National'
+            and circuit <> 'Asia'""")
         res = cur.fetchall()
         paths = [
             {
