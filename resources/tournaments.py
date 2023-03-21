@@ -195,7 +195,6 @@ class Tournament(Resource):
         SELECT 
            coalesce(fname|| ' ' || lname, player_games.player) as Player, 
            team as Team,
-           players.player_id,
            count(tens) as GP,
            sum(ifnull(tuh, 20)) as TUH,
            sum(powers) as \"15\", sum(tens) as \"10\", sum(negs) as \"-5\",
@@ -213,7 +212,7 @@ class Tournament(Resource):
            LEFT JOIN players on player_games.player_id = players.player_id
            LEFT JOIN people on players.person_id = people.person_id
            where player_games.tournament_id = {tournament_id}
-           GROUP BY 1, 2, 3
+           GROUP BY 1, 2
            order by Team, Player
         """)
 
