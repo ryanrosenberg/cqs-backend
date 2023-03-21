@@ -7,17 +7,6 @@ import utils
 
 class AllEditors(Resource):
     def get(self):
-        con = sq.connect("../stats.db")
-        cur = con.cursor()
-
-        def read_df(table_name):
-            cur.execute(f"SELECT * from {table_name}")
-            rows = cur.fetchall()
-            keys = [k[0] for k in cur.description]
-            res = [dict(zip(keys, row)) for row in rows]
-
-            return pd.DataFrame(res)
-
         editors = pd.read_csv('https://github.com/ryanrosenberg/cqs-backend/blob/master/all-editors.csv').replace({np.nan:None}).to_dict(orient='records')
 
         return editors
