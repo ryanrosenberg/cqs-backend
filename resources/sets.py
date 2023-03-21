@@ -18,7 +18,7 @@ class AllEditors(Resource):
 
             return pd.DataFrame(res)
 
-        editors = pd.read_csv('all-editors.csv').replace({np.nan:None}).to_dict(orient='records')
+        editors = pd.read_csv('https://github.com/ryanrosenberg/cqs-backend/blob/master/all-editors.csv').replace({np.nan:None}).to_dict(orient='records')
 
         return editors
 
