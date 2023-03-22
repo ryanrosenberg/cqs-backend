@@ -92,7 +92,7 @@ class Tournament(Resource):
         cur.execute(f"""SELECT 
            rank as Rank,
            team as Team,
-           schools.school_name as School, slug,
+           schools.school_name as School, slug, bracket,
            count(result) as GP,
            sum(case result when 1 then 1 else 0 end) || '-' ||
            sum(case result when 0 then 1 else 0 end) as \"W-L\",
@@ -114,7 +114,7 @@ class Tournament(Resource):
            LEFT JOIN sets on tournaments.set_id = sets.set_id
            LEFT JOIN sites on tournaments.site_id = sites.site_id
            WHERE team_games.tournament_id = {tournament_id}
-           GROUP BY 1, 2, 3, 4
+           GROUP BY 1, 2, 3, 4, 5
         """)
 
         rows = cur.fetchall()
