@@ -63,7 +63,7 @@ class Team(Resource):
         keys = [k[0] for k in cur.description]
         summary_res = [dict(zip(keys, row)) for row in rows]
         for tournament in summary_res:
-                tournament['Year'] = f"<a href = '../seasons/{tournament['Year']}'>{tournament['Year']}</a>"
+            tournament['Year'] = f"<a href = '../seasons/{tournament['Year']}'>{tournament['Year']}</a>"
 
 
         cur.execute(f"""SELECT 
@@ -200,7 +200,7 @@ class Team(Resource):
         keys = [k[0] for k in cur.description]
         hosting_res = [dict(zip(keys, row)) for row in rows]
         for en in hosting_res:
-                en['Teams'] = f"<a href = '../tournaments/{utils.string(en['tournament_id'])}'>{en['Teams']}</a>"
+            en['Teams'] = f"<a href = '../tournaments/{utils.string(en['tournament_id'])}'>{en['Teams']}</a>"
 
         res = {
             'Summary': summary_res,
@@ -218,7 +218,7 @@ class TeamsThisYear(Resource):
         con = sq.connect("stats.db")
         cur = con.cursor()
 
-        cur.execute(f"""
+        cur.execute("""
         SELECT 
 team as Team,
 school as School, slug,
