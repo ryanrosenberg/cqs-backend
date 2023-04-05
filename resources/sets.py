@@ -88,7 +88,7 @@ LEFT JOIN tournaments on team_games.tournament_id = tournaments.tournament_id
 
         cur.execute(f"""SELECT 
 sets.year as Year,
-ifnull(team, school_name) as Team, team_games.tournament_id, schools.slug as school_slug,
+ifnull(teams.team, school_name) as Team, team_games.tournament_id, schools.slug as school_slug,
 \"set\" as \"Set\", site as Site, 
 count(game_id) as GP,
  sum(case result when 1 then 1 else 0 end) || '-' ||

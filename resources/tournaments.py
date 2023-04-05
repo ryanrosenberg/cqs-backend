@@ -10,7 +10,7 @@ class RecentTournaments(Resource):
         con = sq.connect("stats.db")
         cur = con.cursor()
 
-        cur.execute(f""" SELECT tournaments.*, results.Champion FROM (SELECT 
+        cur.execute(""" SELECT tournaments.*, results.Champion FROM (SELECT 
                     date as Date,
                     sets.year, \"set\" as \"Set\", site as Site,
                     \"set\" || ' at ' || site as Tournament, tournaments.tournament_id,
@@ -28,7 +28,7 @@ class RecentTournaments(Resource):
                         SELECT 
                         date as Date,
                         \"set\" || ' at ' || site as Tournament,
-                        team as Champion
+                        teams.team as Champion
                         from team_games
                         left join teams on team_games.team_id = teams.team_id
                         left join tournaments on team_games.tournament_id = tournaments.tournament_id
@@ -91,7 +91,7 @@ class Tournament(Resource):
 
         cur.execute(f"""SELECT 
            rank as Rank,
-           team as Team,
+           teams.team as Team,
            schools.school_name as School, slug, bracket,
            count(result) as GP,
            sum(case result when 1 then 1 else 0 end) || '-' ||
