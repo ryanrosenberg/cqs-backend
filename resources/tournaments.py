@@ -91,7 +91,7 @@ class Tournament(Resource):
 
         cur.execute(f"""SELECT 
            rank as Rank,
-           team as Team,
+           teams.team as Team,
            schools.school_name as School, slug, bracket,
            count(result) as GP,
            sum(case result when 1 then 1 else 0 end) || '-' ||
