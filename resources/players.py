@@ -1,4 +1,5 @@
 from flask_restful import Resource
+import time
 
 import sqlite3 as sq
 
@@ -21,6 +22,7 @@ class PlayerList(Resource):
 
 class Player(Resource):
     def get(self, player_slug):
+        tic = time.perf_counter()
         con = sq.connect("stats.db")
         cur = con.cursor()
         cur.execute(f"""
@@ -115,4 +117,6 @@ GROUP BY 1, 2, 3""")
             if set['set_slug']:
                 set['Set'] = f"<a href = '../sets/{set['set_slug']}'>{set['Set']}</a>"
 
+        toc = time.perf_counter()
+        print(f"Done in {toc - tic:0.4f} seconds")
         return {'Years': years_res, 'Tournaments': tournaments_res, 'Editing': editing_res}
