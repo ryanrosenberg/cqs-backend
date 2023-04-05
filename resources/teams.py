@@ -53,7 +53,8 @@ class Team(Resource):
            FROM tournament_results
            LEFT JOIN tournaments on tournament_results.tournament_id = tournaments.tournament_id
            LEFT JOIN sets on tournaments.set_id = sets.set_id
-           LEFT JOIN schools on tournament_results.school_id = schools.school_id
+           LEFT JOIN teams on tournament_results.team_id = teams.team_id
+           LEFT JOIN schools on teams.school_id = schools.school_id
            WHERE \"set\" = 'DI ICT'
            and slug = '{team_slug}') ict on sets.year = ict.year
            WHERE slug = '{team_slug}'
