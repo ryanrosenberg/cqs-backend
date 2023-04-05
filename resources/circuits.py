@@ -88,7 +88,7 @@ from sites
        SELECT 
 date as Date,
 coalesce(\"set\" || ' at ' || site, '') as Tournament, team_games.tournament_id,
-team as Champion
+teams.team as Champion
 from team_games
 left join teams on team_games.team_id = teams.team_id
 left join tournaments on team_games.tournament_id = tournaments.tournament_id

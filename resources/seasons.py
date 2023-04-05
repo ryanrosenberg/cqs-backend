@@ -94,7 +94,7 @@ where champions.year = '{season}'
                         SELECT 
                         date as Date,
                         \"set\" || ' at ' || site as Tournament,
-                        team as Champion
+                        teams.team as Champion
                         from team_games
                         left join teams on team_games.team_id = teams.team_id
                         left join tournaments on team_games.tournament_id = tournaments.tournament_id
@@ -126,8 +126,6 @@ from team_games
 left join editors on sets.set_id = editors.set_id
  LEFT JOIN schools on team_games.school_id = schools.school_id
  LEFT JOIN teams on team_games.team_id = teams.team_id
- LEFT JOIN tournament_results on team_games.tournament_id = tournament_results.tournament_id
-           and team_games.team_id = tournament_results.team_id
  WHERE sets.year = '{season}'
  GROUP BY 1,2,3
  order by difficulty, Teams

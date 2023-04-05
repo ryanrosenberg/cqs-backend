@@ -64,7 +64,7 @@ class Player(Resource):
            \"set\" as \"Set\", tournaments.tournament_id,
            site as Site,
            teams.school as School, schools.slug as school_slug, sets.set_slug as set_slug,
-           coalesce(team, school_name) as Team,
+           coalesce(teams.team, school_name) as Team,
            rank || '/' || CAST(num_teams as int) as Finish,
            count(tens) as GP,
            sum(ifnull(tuh, 20)) as TUH,

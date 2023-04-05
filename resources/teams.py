@@ -182,7 +182,7 @@ class Team(Resource):
            sets.year as Year,
            date as Date,
            \"set\" as \"Set\",
-           count(distinct team) as Teams
+           count(distinct teams.team) as Teams
            from team_games
            LEFT JOIN teams on team_games.team_id = teams.team_id
            LEFT JOIN tournaments on team_games.tournament_id = tournaments.tournament_id
