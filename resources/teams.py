@@ -45,7 +45,8 @@ class Team(Resource):
            FROM tournament_results
            LEFT JOIN tournaments on tournament_results.tournament_id = tournaments.tournament_id
            LEFT JOIN sets on tournaments.set_id = sets.set_id
-           LEFT JOIN schools on tournament_results.school_id = schools.school_id
+           LEFT JOIN teams on tournament_results.team_id = teams.team_id
+           LEFT JOIN schools on teams.school_id = schools.school_id
            WHERE \"set\" = 'ACF Nationals'
            and slug = '{team_slug}') nats on sets.year = nats.year
            LEFT JOIN (SELECT sets.year as Year, rank as ict_rank, tournament_results.tournament_id as ict_id
