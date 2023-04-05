@@ -102,7 +102,7 @@ class Team(Resource):
             sets.year as Year,
            sets.year || ' ' || \"set\" || ' ' || site as tournament_name,
            date as Date,
-           team as Team,
+           teams.team as Team,
            players as Players,
            rank || '/' || cast(num_teams as int) as Finish,
            count(result) as GP,
