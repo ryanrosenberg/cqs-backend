@@ -105,7 +105,7 @@ class Team(Resource):
            date as Date,
            teams.team as Team,
            players as Players,
-           rank || '/' || cast(num_teams as int) as Finish,
+           cast(rank as int) || '/' || cast(num_teams as int) as Finish,
            count(result) as GP,
            sum(case result when 1 then 1 else 0 end) || '-' ||
            sum(case result when 0 then 1 else 0 end) as \"W-L\",
