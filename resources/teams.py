@@ -241,7 +241,7 @@ left join teams on team_games.team_id = teams.team_id
 left join schools on teams.school_id = schools.school_id
 left join tournaments on team_games.tournament_id = tournaments.tournament_id
 left join sets on tournaments.set_id = sets.set_id
-where sets.year = '21-22'
+where sets.year = '22-23'
 and teams.school_id is not null
 GROUP BY 1
 ORDER BY GP desc""")
