@@ -16,8 +16,7 @@ class SetList(Resource):
         con = sq.connect("stats.db")
         cur = con.cursor()
 
-        cur.execute(f"""
-        SELECT sets.set_slug from sets """)
+        cur.execute(f"""SELECT sets.set_slug from sets """)
         rows = cur.fetchall()
         keys = [k[0] for k in cur.description]
         res = [dict(zip(keys, row)) for row in rows]
