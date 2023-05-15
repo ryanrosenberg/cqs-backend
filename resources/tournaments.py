@@ -78,7 +78,7 @@ class Tournament(Resource):
 
         cur.execute(f"""
         SELECT 
-           date,  \"set\" || ' at ' || site as tournament_name, naqt_id
+           date, tournaments.tournament_name, naqt_id
            from tournaments 
            LEFT JOIN sets on tournaments.set_id = sets.set_id
            LEFT JOIN sites on tournaments.site_id = sites.site_id

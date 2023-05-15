@@ -14,15 +14,13 @@ def string(int):
     new_str = str(int).replace('.0', '')
     return new_str
 
-docs = [doc.id for doc in db.collection(u'players').stream()]
-
 con = sq.connect("stats.db")
 cur = con.cursor()
 
 cur.execute("select game_id from games")
-player_slugs = [string(r[0]) for r in cur.fetchall() if r[0] is not None and r[0] not in docs]
+game_slugs = [string(r[0]) for r in cur.fetchall() if r[0] is not None]
 
-for game_id in player_slugs:
+for game_id in game_slugs:
     print(game_id)
     cur.execute(f"""
         SELECT 
