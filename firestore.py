@@ -146,9 +146,9 @@ cur = con.cursor()
 # db.collection("circuits").document(circuit_slug).set(res)
 
 # Players
-cur.execute("SELECT slug from people where slug is not null and schools is not null")
-player_slugs = [string(r[0]) for r in cur.fetchall() if r[0] is not None]
-for player_slug in player_slugs[13030:]:
+cur.execute("SELECT slug from people where slug is not null and schools is null")
+player_slugs = [string(r[0]) for r in cur.fetchall() if r[0] is not None and string(r[0]) == 'seth-teitler']
+for player_slug in player_slugs:
     cur.execute(
         f"""
     SELECT
@@ -192,11 +192,12 @@ for player_slug in player_slugs[13030:]:
     SELECT
         sets.year as Year,
         date as Date,
+        people.player as Player,
         \"set\" as \"Set\", tournaments.tournament_id,
         site as Site,
         teams.school as School, schools.slug as school_slug, sets.set_slug as set_slug,
         coalesce(teams.team, school_name) as Team,
-        rank || '/' || CAST(num_teams as int) as Finish,
+        CAST(rank as int) || '/' || CAST(num_teams as int) as Finish,
         count(tens) as GP,
         sum(ifnull(tuh, 20)) as TUH,
         sum(powers) as \"15\", sum(tens) as \"10\", sum(negs) as \"-5\",
@@ -217,7 +218,7 @@ for player_slug in player_slugs[13030:]:
         INNER JOIN players on player_games.player_id = players.player_id
         LEFT JOIN people on players.person_id = people.person_id
         WHERE people.slug = '{player_slug}'
-        GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9
+        GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
         ORDER BY 2"""
     )
 
@@ -256,7 +257,6 @@ GROUP BY 1, 2, 3"""
             set["Set"] = f"<a href = '../sets/{set['set_slug']}'>{set['Set']}</a>"
 
     res = {"Years": years_res, "Tournaments": tournaments_res, "Editing": editing_res}
-
     db.collection("players").document(player_slug).set(res)
     print(player_slug)
 
@@ -2106,7 +2106,7 @@ order by difficulty, Teams
 #     for team in standings_res:
 #         if team['slug']:
 #             team['School'] = f"<a href = '../schools/{team['slug']}'>{team['School']}</a>"
-#         team['Team'] = f"<a href = '#{utils.slug(team['Team'])}'>{team['Team']}</a>"
+#         team['Team'] = f"<a href = '/tournaments/{tournament_id}/team-detail#{utils.slug(team['Team'])}'>{team['Team']}</a>"
 
 #     cur.execute(f"""
 #     SELECT *, printf("%.2f", rawPPG) as PPG from (
@@ -2143,15 +2143,15 @@ order by difficulty, Teams
 #     keys = [k[0] for k in cur.description]
 #     players_res = [dict(zip(keys, row)) for row in rows]
 #     for team in players_res:
-#         team['Player'] = f"<a href = '#{utils.slug(team['Player']) + '-' + utils.slug(team['Team'])}'>{team['Player']}</a>"
-#         team['Team'] = f"<a href = '#{utils.slug(team['Team'])}'>{team['Team']}</a>"
+#         team['Player'] = f"<a href = '/tournaments/{tournament_id}/player-detail#{utils.slug(team['Player']) + '-' + utils.slug(team['Team'])}'>{team['Player']}</a>"
+#         team['Team'] = f"<a href = '/tournaments/{tournament_id}/team-detail#{utils.slug(team['Team'])}'>{team['Team']}</a>"
 
 #     cur.execute(f"""
 #     SELECT
 #         CAST(REPLACE(round, 'Round ', '') as int) as Round,
 #         team as Team,
 #         game_num, game_id,
-#         opponent as Opponent,
+#         opponent_team as Opponent,
 #         case result when 1 then 'W' when 0 then 'L' else 'T' end as Result,
 #         total_pts as PF, opp_pts as PA, powers as \"15\", tens as \"10\",
 #         negs as \"-5\", ifnull(tuh, 20) as TUH,
@@ -2169,9 +2169,9 @@ order by difficulty, Teams
 #     keys = [k[0] for k in cur.description]
 #     team_detail_team_res = [dict(zip(keys, row)) for row in rows]
 #     for team in team_detail_team_res:
-#         team['Result'] = f"<a href = '../games/{utils.string(team['game_id'])}'>{team['Result']}</a>"
+#         team['Result'] = f"<a href = '../../games/{utils.string(team['game_id'])}'>{team['Result']}</a>"
 #         if team['Opponent']:
-#             team['Opponent'] = f"<a href = '#{utils.slug(team['Opponent'])}'>{team['Opponent']}</a>"
+#             team['Opponent'] = f"<a href = '/tournaments/{tournament_id}/team-detail#{utils.slug(team['Opponent'])}'>{team['Opponent']}</a>"
 
 
 #     cur.execute(f"""
@@ -2203,7 +2203,7 @@ order by difficulty, Teams
 #     keys = [k[0] for k in cur.description]
 #     team_detail_player_res = [dict(zip(keys, row)) for row in rows]
 #     for team in team_detail_player_res:
-#         team['Player'] = f"<a href = '#{utils.slug(team['Player']) + '-' + utils.slug(team['Team'])}'>{team['Player']}</a>"
+#         team['Player'] = f"<a href = '/tournaments/{tournament_id}/player-detail#{utils.slug(team['Player']) + '-' + utils.slug(team['Team'])}'>{team['Player']}</a>"
 
 #     cur.execute(f"""SELECT
 # coalesce(fname|| ' ' || lname, player_games.player) as player, team,
@@ -2229,9 +2229,9 @@ order by difficulty, Teams
 #     keys = [k[0] for k in cur.description]
 #     player_detail_res = [dict(zip(keys, row)) for row in rows]
 #     for team in player_detail_res:
-#         team['Result'] = f"<a href = '../games/{utils.string(team['game_id'])}'>{team['Result']}</a>"
+#         team['Result'] = f"<a href = '../../games/{utils.string(team['game_id'])}'>{team['Result']}</a>"
 #         if team['Opponent']:
-#             team['Opponent'] = f"<a href = '#{utils.slug(team['Opponent'])}'>{team['Opponent']}</a>"
+#             team['Opponent'] = f"<a href = '/tournaments/{tournament_id}/team-detail#{utils.slug(team['Opponent'])}'>{team['Opponent']}</a>"
 
 #     res = {
 #         'Summary': summary_res,
