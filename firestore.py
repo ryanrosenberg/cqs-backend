@@ -24,7 +24,7 @@ def string(int):
 con = sq.connect("stats.db")
 cur = con.cursor()
 
-## Circuits
+# Circuits
 # cur.execute(
 #     """SELECT distinct circuit_slug from schools
 #     where circuit is not null
@@ -105,7 +105,7 @@ cur = con.cursor()
 #     keys = [k[0] for k in cur.description]
 #     res = [dict(zip(keys, row)) for row in rows]
 #     for en in res:
-#             en['Champion'] = f"<a href = '../tournaments/{utils.string(en['tournament_id'])}#{utils.slug(en['Champion'])}'>{en['Champion']}</a>"
+#             en['Champion'] = f"<a href = '../tournaments/{utils.string(en['tournament_id'])}/team-detail#{utils.slug(en['Champion'])}'>{en['Champion']}</a>"
 #     champs_res = pd.DataFrame(res)
 
 #     cur.execute(f"""
@@ -143,11 +143,11 @@ cur = con.cursor()
 #         'Tournaments': tournaments_res
 #     }
 
-# db.collection("circuits").document(circuit_slug).set(res)
+#     db.collection("circuits").document(circuit_slug).set(res)
 
 # Players
-cur.execute("SELECT slug from people where slug is not null and schools is null")
-player_slugs = [string(r[0]) for r in cur.fetchall() if r[0] is not None and string(r[0]) == 'seth-teitler']
+cur.execute("SELECT slug from people where slug is not null")
+player_slugs = [string(r[0]) for r in cur.fetchall() if r[0] is not None and string(r[0]) == 'rafael-krichevsky']
 for player_slug in player_slugs:
     cur.execute(
         f"""
@@ -198,6 +198,7 @@ for player_slug in player_slugs:
         teams.school as School, schools.slug as school_slug, sets.set_slug as set_slug,
         coalesce(teams.team, school_name) as Team,
         CAST(rank as int) || '/' || CAST(num_teams as int) as Finish,
+        W, L,
         count(tens) as GP,
         sum(ifnull(tuh, 20)) as TUH,
         sum(powers) as \"15\", sum(tens) as \"10\", sum(negs) as \"-5\",
@@ -218,7 +219,7 @@ for player_slug in player_slugs:
         INNER JOIN players on player_games.player_id = players.player_id
         LEFT JOIN people on players.person_id = people.person_id
         WHERE people.slug = '{player_slug}'
-        GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+        GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
         ORDER BY 2"""
     )
 
@@ -256,8 +257,12 @@ GROUP BY 1, 2, 3"""
         if set["set_slug"]:
             set["Set"] = f"<a href = '../sets/{set['set_slug']}'>{set['Set']}</a>"
 
-    res = {"Years": years_res, "Tournaments": tournaments_res, "Editing": editing_res}
-    db.collection("players").document(player_slug).set(res)
+    res = {
+        "Years": years_res, 
+        "Tournaments": tournaments_res, 
+        # "Editing": editing_res
+        }
+    db.collection("players").document(player_slug).update(res)
     print(player_slug)
 
 
@@ -1715,559 +1720,558 @@ order by difficulty, Teams
     print(season)
 
 ## Sets
-# cur.execute(f"""SELECT sets.set_slug from sets """)
-# set_slugs = [string(r[0]) for r in cur.fetchall() if r[0] is not None]
+cur.execute(f"""SELECT sets.set_slug from sets """)
+set_slugs = [string(r[0]) for r in cur.fetchall() if r[0] is not None]
 
-# for set_slug in set_slugs:
-#     cur.execute(f"""
-#         SELECT 
-# sets.year as Year,
-# sets.\"set\" as \"Set\", difficulty, category, set_name, headitor
-# from sets
-# left join editors on sets.set_id = editors.set_id
-#  WHERE sets.set_slug = '{set_slug}'
-#  """)
-#     rows = cur.fetchall()
-#     keys = [k[0] for k in cur.description]
-#     summary_res = [dict(zip(keys, row)) for row in rows]
+for set_slug in set_slugs:
+    print(set_slug)
+    cur.execute(f"""
+        SELECT 
+sets.year as Year,
+sets.\"set\" as \"Set\", difficulty, category, set_name, headitor
+from sets
+left join editors on sets.set_id = editors.set_id
+ WHERE sets.set_slug = '{set_slug}'
+ """)
+    rows = cur.fetchall()
+    keys = [k[0] for k in cur.description]
+    summary_res = [dict(zip(keys, row)) for row in rows]
 
-#     cur.execute(f"""
-#     SELECT 
-# sets.year as Year,
-# sets.\"set\" as \"Set\", difficulty, set_name, headitor,
-# category, subcategory as Subcategory, editor as Editor, slug
-# from sets
-# LEFT JOIN editors on sets.set_id = editors.set_id
-# LEFT JOIN people on editors.person_id = people.person_id
-# WHERE sets.set_slug = '{set_slug}'
-# and category != 'Head'
-# """)
-#     rows = cur.fetchall()
-#     keys = [k[0] for k in cur.description]
-#     editor_res = [dict(zip(keys, row)) for row in rows]
-#     for editor in editor_res:
-#         if editor['slug']:
-#             editor['Editor'] = f"<a href = '../players/{editor['slug']}'>{editor['Editor']}</a>"
+    cur.execute(f"""
+    SELECT 
+sets.year as Year,
+sets.\"set\" as \"Set\", difficulty, set_name, headitor,
+category, subcategory as Subcategory, editor as Editor, slug
+from sets
+LEFT JOIN editors on sets.set_id = editors.set_id
+LEFT JOIN people on editors.person_id = people.person_id
+WHERE sets.set_slug = '{set_slug}'
+and category != 'Head'
+""")
+    rows = cur.fetchall()
+    keys = [k[0] for k in cur.description]
+    editor_res = [dict(zip(keys, row)) for row in rows]
+    for editor in editor_res:
+        if editor['slug']:
+            editor['Editor'] = f"<a href = '../players/{editor['slug']}'>{editor['Editor']}</a>"
     
-#     if len(editor_res) > 0:
-#         editor_res = pd.DataFrame(editor_res).groupby(
-#             ['category', 'Subcategory']
-#         )[['Editor']].agg(
-#             lambda x: ', '.join(x)
-#         ).reset_index().to_dict('records')
+    if len(editor_res) > 0:
+        editor_res = pd.DataFrame(editor_res).groupby(
+            ['category', 'Subcategory']
+        )[['Editor']].agg(
+            lambda x: ', '.join(x)
+        ).reset_index().to_dict('records')
 
-#     cur.execute(f"""SELECT 
-# sets.year as Year, tournaments.date as Date, team_games.tournament_id,
-# \"set\" as \"Set\", site as Site, count(distinct team_id) as Teams,
-# count(distinct(team_games.school_id)) as Schools,
-# round(sum(powers)/sum(ifnull(tuh, 20)), 3) as \"15%\",
-# printf("%.3f",(sum(ifnull(powers,0))+sum(tens))/sum(ifnull(tuh, 20)/2)) as \"Conv%\",
-# printf("%.2f",sum(bonus_pts)/sum(bonuses_heard)) as PPB
-# from team_games
-# LEFT JOIN tournaments on team_games.tournament_id = tournaments.tournament_id
-# LEFT JOIN sets on tournaments.set_id = sets.set_id
-# LEFT JOIN sites on tournaments.site_id = sites.site_id
-# WHERE sets.set_slug = '{set_slug}'
-# GROUP BY 1,2,3,4
-# """)
-#     rows = cur.fetchall()
-#     keys = [k[0] for k in cur.description]
-#     tournament_res = [dict(zip(keys, row)) for row in rows]
-#     for en in tournament_res:
-#             en['Site'] = f"<a href = '../tournaments/{utils.string(en['tournament_id'])}'>{en['Site']}</a>"
+    cur.execute(f"""SELECT 
+sets.year as Year, tournaments.date as Date, team_games.tournament_id,
+\"set\" as \"Set\", site as Site, count(distinct team_id) as Teams,
+count(distinct(team_games.school_id)) as Schools,
+round(sum(powers)/sum(ifnull(tuh, 20)), 3) as \"15%\",
+printf("%.3f",(sum(ifnull(powers,0))+sum(tens))/sum(ifnull(tuh, 20)/2)) as \"Conv%\",
+printf("%.2f",sum(bonus_pts)/sum(bonuses_heard)) as PPB
+from team_games
+LEFT JOIN tournaments on team_games.tournament_id = tournaments.tournament_id
+LEFT JOIN sets on tournaments.set_id = sets.set_id
+LEFT JOIN sites on tournaments.site_id = sites.site_id
+WHERE sets.set_slug = '{set_slug}'
+GROUP BY 1,2,3,4
+""")
+    rows = cur.fetchall()
+    keys = [k[0] for k in cur.description]
+    tournament_res = [dict(zip(keys, row)) for row in rows]
+    for en in tournament_res:
+            en['Site'] = f"<a href = '../tournaments/{utils.string(en['tournament_id'])}'>{en['Site']}</a>"
 
-#     cur.execute(f"""SELECT 
-# sets.year as Year,
-# ifnull(teams.team, school_name) as Team, team_games.tournament_id, schools.slug as school_slug,
-# \"set\" as \"Set\", site as Site, 
-# count(game_id) as GP,
-# sum(case result when 1 then 1 else 0 end) || '-' ||
-# sum(case result when 0 then 1 else 0 end) as \"W-L\",
-# sum(ifnull(tuh, 20)) as TUH,
-# sum(powers) as \"15\", sum(tens) as \"10\", sum(negs) as \"-5\",
-# printf("%.1f", sum(powers)/count(result)) as \"15/G\",
-# printf("%.1f", sum(tens)/count(result)) as \"10/G\",
-# printf("%.1f", sum(negs)/count(result)) as \"-5/G\",
-# printf("%.3f",(sum(ifnull(powers, 0)) + sum(tens))/sum(ifnull(tuh, 20)), 3) as \"TU%\",
-# printf("%.2f", avg(total_pts)) as PPG, 
-# printf("%.2f", sum(bonus_pts)/sum(bonuses_heard)) as PPB,
-# printf("%.2f",a_value) as \"A-Value\" 
-# from team_games
-# LEFT JOIN sets on team_games.set_id = sets.set_id
-# LEFT JOIN sites on team_games.site_id = sites.site_id
-# LEFT JOIN schools on team_games.school_id = schools.school_id
-# LEFT JOIN teams on team_games.team_id = teams.team_id
-# LEFT JOIN tournament_results on team_games.tournament_id = tournament_results.tournament_id
-#         and team_games.team_id = tournament_results.team_id
-# WHERE sets.set_slug = '{set_slug}'
-# GROUP BY 1,2,3,4,5
-# """)
-#     rows = cur.fetchall()
-#     keys = [k[0] for k in cur.description]
-#     teams_res = [dict(zip(keys, row)) for row in rows]
-#     for team in teams_res:
-#         team['Site'] = f"<a href = '../tournaments/{str(team['tournament_id']).replace('.0', '')}'>{team['Site']}</a>"
-#         team['Team'] = f"<a href = '../tournaments/{str(team['tournament_id']).replace('.0', '')}#{utils.slug(team['Team'])}'>{team['Team']}</a>"
+    cur.execute(f"""SELECT 
+sets.year as Year,
+ifnull(teams.team, school_name) as Team, team_games.tournament_id, schools.slug as school_slug,
+\"set\" as \"Set\", site as Site, 
+count(game_id) as GP,
+sum(case result when 1 then 1 else 0 end) || '-' ||
+sum(case result when 0 then 1 else 0 end) as \"W-L\",
+sum(ifnull(tuh, 20)) as TUH,
+sum(powers) as \"15\", sum(tens) as \"10\", sum(negs) as \"-5\",
+printf("%.1f", sum(powers)/count(result)) as \"15/G\",
+printf("%.1f", sum(tens)/count(result)) as \"10/G\",
+printf("%.1f", sum(negs)/count(result)) as \"-5/G\",
+printf("%.3f",(sum(ifnull(powers, 0)) + sum(tens))/sum(ifnull(tuh, 20)), 3) as \"TU%\",
+printf("%.2f", avg(total_pts)) as PPG, 
+printf("%.2f", sum(bonus_pts)/sum(bonuses_heard)) as PPB,
+printf("%.2f",a_value) as \"A-Value\" 
+from team_games
+LEFT JOIN sets on team_games.set_id = sets.set_id
+LEFT JOIN sites on team_games.site_id = sites.site_id
+LEFT JOIN schools on team_games.school_id = schools.school_id
+LEFT JOIN teams on team_games.team_id = teams.team_id
+LEFT JOIN tournament_results on team_games.tournament_id = tournament_results.tournament_id
+        and team_games.team_id = tournament_results.team_id
+WHERE sets.set_slug = '{set_slug}'
+GROUP BY 1,2,3,4,5
+""")
+    rows = cur.fetchall()
+    keys = [k[0] for k in cur.description]
+    teams_res = [dict(zip(keys, row)) for row in rows]
+    for team in teams_res:
+        team['Site'] = f"<a href = '../tournaments/{str(team['tournament_id']).replace('.0', '')}'>{team['Site']}</a>"
+        team['Team'] = f"<a href = '../tournaments/{str(team['tournament_id']).replace('.0', '')}#{utils.slug(team['Team'])}'>{team['Team']}</a>"
 
-#     cur.execute(f"""
-#         SELECT
-#         sets.year as Year, \"set\" as \"Set\", site as Site, player_games.tournament_id,
-#         coalesce(fname|| ' ' || lname, player_games.player) as Player,
-#         team as Team, slug,
-#         count(tens) as GP,
-#         sum(ifnull(tuh, 20)) as TUH,
-#         sum(powers) as \"15\", 
-#         sum(tens) as \"10\", 
-#         sum(negs) as \"-5\",
-#         printf("%.1f", sum(powers)/count(tens)) as \"15/G\",
-#         printf("%.1f", sum(tens)/count(tens)) as \"10/G\",
-#         printf("%.1f", sum(negs)/count(tens)) as \"-5/G\",
-#         printf("%.2f", sum(powers)/sum(negs)) as \"P/N\",
-#         printf("%.2f", (sum(ifnull(powers, 0)) + sum(tens))/sum(negs)) as \"G/N\",
-#         printf("%.2f", avg(pts)) as PPG from
-#         player_games
-#         LEFT JOIN teams on player_games.team_id = teams.team_id
-#         LEFT JOIN tournaments on player_games.tournament_id = tournaments.tournament_id
-#         LEFT JOIN sets on player_games.set_id = sets.set_id
-#         LEFT JOIN sites on player_games.site_id = sites.site_id
-#         LEFT JOIN players on player_games.player_id = players.player_id
-#         LEFT JOIN people on players.person_id = people.person_id
-# WHERE sets.set_slug = '{set_slug}'
-# GROUP BY 1,2,3,4,5, 6
-# ORDER BY Player
-# """)
-#     rows = cur.fetchall()
-#     keys = [k[0] for k in cur.description]
-#     players_res = [dict(zip(keys, row)) for row in rows]
-#     for player in players_res:
-#         if player['slug']:
-#             player['Player'] = f"<a href = '../players/{player['slug']}'>{player['Player']}</a>"
-#         player['Team'] = f"<a href = '../tournaments/{str(player['tournament_id']).replace('.0', '')}#{utils.slug(player['Team'])}'>{player['Team']}</a>"
-
-
-#     res = {
-#         'Summary': summary_res,
-#         'Editors': editor_res,
-#         'Tournaments': tournament_res,
-#         'Teams': teams_res,
-#         'Players': players_res
-#     }
-
-#     db.collection("set_stats").document(set_slug).set(res)
-#     print(set_slug)
-
-## Schools
-# cur.execute("""SELECT distinct(slug) from 
-#         team_games
-#         left join teams on team_games.team_id = teams.team_id
-#         left join schools on teams.school_id = schools.school_id
-#                     where slug is not null
-#                     and school_name is not null""")
-# team_slugs = [string(r[0]) for r in cur.fetchall() if r[0] is not None]
-# print(len(team_slugs))
-# for team_slug in team_slugs:
-#     cur.execute(f"""SELECT school_name as School, schools.circuit as Circuit,
-#            sets.year as Year,
-#            count(distinct player_games.tournament_id) as Tmnts,
-#            max(tournament_teams) as Teams,
-#            count(distinct player_id) as Players,
-#            nats_rank as \"ACF Nats\", nats_id, ict_id,
-#            ict_rank as \"DI ICT\" from 
-#            player_games
-#            LEFT JOIN schools on player_games.school_id = schools.school_id
-#            LEFT JOIN teams on player_games.team_id = teams.team_id
-#            LEFT JOIN (SELECT tournament_id, count(distinct team_id) as tournament_teams from team_games LEFT JOIN schools on team_games.school_id = schools.school_id WHERE slug = '{team_slug}' GROUP BY 1) tournament_teams on player_games.tournament_id = tournament_teams.tournament_id
-#            LEFT JOIN tournaments on player_games.tournament_id = tournaments.tournament_id
-#            LEFT JOIN sets on tournaments.set_id = sets.set_id
-#            LEFT JOIN sites on tournaments.site_id = sites.site_id
-#            LEFT JOIN (SELECT sets.year as Year, rank as nats_rank, tournament_results.tournament_id as nats_id
-#            FROM tournament_results
-#            LEFT JOIN tournaments on tournament_results.tournament_id = tournaments.tournament_id
-#            LEFT JOIN sets on tournaments.set_id = sets.set_id
-#            LEFT JOIN teams on tournament_results.team_id = teams.team_id
-#            LEFT JOIN schools on teams.school_id = schools.school_id
-#            WHERE \"set\" = 'ACF Nationals'
-#            and slug = '{team_slug}') nats on sets.year = nats.year
-#            LEFT JOIN (SELECT sets.year as Year, rank as ict_rank, tournament_results.tournament_id as ict_id
-#            FROM tournament_results
-#            LEFT JOIN tournaments on tournament_results.tournament_id = tournaments.tournament_id
-#            LEFT JOIN sets on tournaments.set_id = sets.set_id
-#            LEFT JOIN teams on tournament_results.team_id = teams.team_id
-#            LEFT JOIN schools on teams.school_id = schools.school_id
-#            WHERE \"set\" = 'DI ICT'
-#            and slug = '{team_slug}') ict on sets.year = ict.year
-#            WHERE slug = '{team_slug}'
-#            GROUP BY 1, 2, 3
-#            ORDER BY 3 desc""")
-
-#     rows = cur.fetchall()
-#     keys = [k[0] for k in cur.description]
-#     summary_res = [dict(zip(keys, row)) for row in rows]
-#     for tournament in summary_res:
-#         tournament['Year'] = f"<a href = '../seasons/{tournament['Year']}'>{tournament['Year']}</a>"
+    cur.execute(f"""
+        SELECT
+        sets.year as Year, \"set\" as \"Set\", site as Site, player_games.tournament_id,
+        coalesce(fname|| ' ' || lname, player_games.player) as Player,
+        team as Team, slug,
+        count(tens) as GP,
+        sum(ifnull(tuh, 20)) as TUH,
+        sum(powers) as \"15\", 
+        sum(tens) as \"10\", 
+        sum(negs) as \"-5\",
+        printf("%.1f", sum(powers)/count(tens)) as \"15/G\",
+        printf("%.1f", sum(tens)/count(tens)) as \"10/G\",
+        printf("%.1f", sum(negs)/count(tens)) as \"-5/G\",
+        printf("%.2f", sum(powers)/sum(negs)) as \"P/N\",
+        printf("%.2f", (sum(ifnull(powers, 0)) + sum(tens))/sum(negs)) as \"G/N\",
+        printf("%.2f", avg(pts)) as PPG from
+        player_games
+        LEFT JOIN teams on player_games.team_id = teams.team_id
+        LEFT JOIN tournaments on player_games.tournament_id = tournaments.tournament_id
+        LEFT JOIN sets on player_games.set_id = sets.set_id
+        LEFT JOIN sites on player_games.site_id = sites.site_id
+        LEFT JOIN players on player_games.player_id = players.player_id
+        LEFT JOIN people on players.person_id = people.person_id
+WHERE sets.set_slug = '{set_slug}'
+GROUP BY 1,2,3,4,5, 6
+ORDER BY Player
+""")
+    rows = cur.fetchall()
+    keys = [k[0] for k in cur.description]
+    players_res = [dict(zip(keys, row)) for row in rows]
+    for player in players_res:
+        if player['slug']:
+            player['Player'] = f"<a href = '../players/{player['slug']}'>{player['Player']}</a>"
+        player['Team'] = f"<a href = '../tournaments/{str(player['tournament_id']).replace('.0', '')}#{utils.slug(player['Team'])}'>{player['Team']}</a>"
 
 
-#     cur.execute(f"""SELECT 
-#         team as Team,
-#         count(distinct team_games.tournament_id) as Tmnts,
-#         count(result) as GP,
-#         sum(case result when 1 then 1 else 0 end) || '-' ||
-#         sum(case result when 0 then 1 else 0 end) as \"W-L\",
-#         printf("%.3f", avg(result)) as \"Win%\",
-#         sum(ifnull(tuh, 20)) as TUH,
-#         sum(powers) as \"15\", sum(tens) as \"10\", sum(negs) as \"-5\",
-#         printf("%.1f", sum(powers)/count(result)) as \"15/G\",
-#         printf("%.1f", sum(tens)/count(result)) as \"10/G\",
-#         printf("%.1f", sum(negs)/count(result)) as \"-5/G\",
-#         printf("%.3f", (sum(ifnull(powers, 0)) + sum(tens))/sum(ifnull(tuh, 20))) as \"TU%\",
-#         printf("%.1f", avg(total_pts)) as PPG, 
-#         printf("%.2f", sum(bonus_pts)/sum(bonuses_heard)) as PPB from 
-#         team_games
-#         LEFT JOIN schools on team_games.school_id = schools.school_id
-#         LEFT JOIN teams on team_games.team_id = teams.team_id
-#         LEFT JOIN tournaments on team_games.tournament_id = tournaments.tournament_id
-#         LEFT JOIN sets on tournaments.set_id = sets.set_id
-#         LEFT JOIN sites on tournaments.site_id = sites.site_id
-#         WHERE slug = '{team_slug}'
-#         GROUP BY 1
-#         ORDER BY 3 desc""")
+    res = {
+        'Summary': summary_res,
+        'Editors': editor_res,
+        'Tournaments': tournament_res,
+        'Teams': teams_res,
+        'Players': players_res
+    }
 
-#     rows = cur.fetchall()
-#     keys = [k[0] for k in cur.description]
-#     teams_res = [dict(zip(keys, row)) for row in rows]
+    db.collection("set_stats").document(set_slug).set(res)
 
-#     cur.execute(f"""
-#         SELECT 
-#         tournaments.date || ': ' || tournaments.tournament_name as Tournament, team_games.tournament_id,
-#         sets.year as Year,
-#         sets.year || ' ' || \"set\" || ' ' || site as tournament_name,
-#         date as Date,
-#         teams.team as Team,
-#         players as Players,
-#         cast(rank as int) || '/' || cast(num_teams as int) as Finish,
-#         count(result) as GP,
-#         sum(case result when 1 then 1 else 0 end) || '-' ||
-#         sum(case result when 0 then 1 else 0 end) as \"W-L\",
-#         sum(ifnull(tuh, 20)) as TUH,
-#         sum(powers) as \"15\", sum(tens) as \"10\", sum(negs) as \"-5\",
-#         printf("%.1f", sum(powers)/count(result)) as \"15/G\",
-#         printf("%.1f", sum(tens)/count(result)) as \"10/G\",
-#         printf("%.1f", sum(negs)/count(result)) as \"-5/G\",
-#         printf("%.3f", (sum(ifnull(powers, 0)) + sum(tens))/sum(ifnull(tuh, 20))) as \"TU%\",
-#         printf("%.1f", avg(total_pts)) as PPG, 
-#         printf("%.2f", sum(bonus_pts)/sum(bonuses_heard)) as PPB,
-#         printf("%.2f", a_value) as \"A-Value\" 
-#         from team_games
-#         LEFT JOIN schools on team_games.school_id = schools.school_id
-#         LEFT JOIN teams on team_games.team_id = teams.team_id
-#         LEFT JOIN tournaments on team_games.tournament_id = tournaments.tournament_id
-#         LEFT JOIN tournament_results on team_games.tournament_id = tournament_results.tournament_id
-#         and team_games.team_id = tournament_results.team_id
-#         LEFT JOIN sets on tournaments.set_id = sets.set_id
-#         LEFT JOIN sites on tournaments.site_id = sites.site_id
-#         LEFT JOIN (SELECT tournament_id, team_id, 
-#         group_concat(distinct ' ' || coalesce(fname|| ' ' || lname, player_games.player)) as players
-#         from player_games
-#         LEFT JOIN schools on player_games.school_id = schools.school_id
-#         LEFT JOIN players on player_games.player_id = players.player_id
-#         LEFT JOIN people on players.person_id = people.person_id
-#         WHERE schools.slug = '{team_slug}'
-#         GROUP BY 1, 2) player_games
-#         on team_games.tournament_id = player_games.tournament_id
-#         and team_games.team_id = player_games.team_id
-#         WHERE schools.slug = '{team_slug}'
-#         GROUP BY 1, 2, 3, 4, 5, 6
-#         ORDER BY date desc""")
+# Schools
+cur.execute("""SELECT distinct(slug) from 
+        team_games
+        left join teams on team_games.team_id = teams.team_id
+        left join schools on teams.school_id = schools.school_id
+                    where slug is not null
+                    and school_name is not null""")
+team_slugs = [string(r[0]).replace(',', '') for r in cur.fetchall() if r[0] is not None]
+# team_slugs = ['western-ontario']
+for team_slug in team_slugs:
+    cur.execute(f"""SELECT school_name as School, schools.circuit as Circuit,
+           sets.year as Year,
+           count(distinct player_games.tournament_id) as Tmnts,
+           max(tournament_teams) as Teams,
+           count(distinct player_id) as Players,
+           nats_rank as \"ACF Nats\", nats_id, ict_id,
+           ict_rank as \"DI ICT\" from 
+           player_games
+           LEFT JOIN schools on player_games.school_id = schools.school_id
+           LEFT JOIN teams on player_games.team_id = teams.team_id
+           LEFT JOIN (SELECT tournament_id, count(distinct team_id) as tournament_teams from team_games LEFT JOIN schools on team_games.school_id = schools.school_id WHERE slug = '{team_slug}' GROUP BY 1) tournament_teams on player_games.tournament_id = tournament_teams.tournament_id
+           LEFT JOIN tournaments on player_games.tournament_id = tournaments.tournament_id
+           LEFT JOIN sets on tournaments.set_id = sets.set_id
+           LEFT JOIN sites on tournaments.site_id = sites.site_id
+           LEFT JOIN (SELECT sets.year as Year, rank as nats_rank, tournament_results.tournament_id as nats_id
+           FROM tournament_results
+           LEFT JOIN tournaments on tournament_results.tournament_id = tournaments.tournament_id
+           LEFT JOIN sets on tournaments.set_id = sets.set_id
+           LEFT JOIN teams on tournament_results.team_id = teams.team_id
+           LEFT JOIN schools on teams.school_id = schools.school_id
+           WHERE \"set\" = 'ACF Nationals'
+           and slug = '{team_slug}') nats on sets.year = nats.year
+           LEFT JOIN (SELECT sets.year as Year, rank as ict_rank, tournament_results.tournament_id as ict_id
+           FROM tournament_results
+           LEFT JOIN tournaments on tournament_results.tournament_id = tournaments.tournament_id
+           LEFT JOIN sets on tournaments.set_id = sets.set_id
+           LEFT JOIN teams on tournament_results.team_id = teams.team_id
+           LEFT JOIN schools on teams.school_id = schools.school_id
+           WHERE \"set\" = 'DI ICT'
+           and slug = '{team_slug}') ict on sets.year = ict.year
+           WHERE slug = '{team_slug}'
+           GROUP BY 1, 2, 3
+           ORDER BY 3 desc""")
 
-#     rows = cur.fetchall()
-#     keys = [k[0] for k in cur.description]
-#     tournament_res = [dict(zip(keys, row)) for row in rows]
-#     for tournament in tournament_res:
-#         if tournament['tournament_id']:
-#             tournament['Team'] = f"<a href = '../tournaments/{str(tournament['tournament_id']).replace('.0', '')}#{utils.slug(tournament['Team'])}'>{tournament['Team']}</a>"
-#             tournament['Tournament'] = f"<a href = '../tournaments/{str(tournament['tournament_id']).replace('.0', '')}'>{tournament['Tournament']}</a>"
+    rows = cur.fetchall()
+    keys = [k[0] for k in cur.description]
+    summary_res = [dict(zip(keys, row)) for row in rows]
+    for tournament in summary_res:
+        tournament['Year'] = f"<a href = '../seasons/{tournament['Year']}'>{tournament['Year']}</a>"
 
-#     cur.execute(f"""
-#     SELECT 
-#         fname || ' ' || lname as Player, 
-#         schools.slug, people.slug as person_slug,
-#         strftime('%Y', min(date)) || '-' || strftime('%Y', max(date)) as Yrs,
-#         count(distinct player_games.tournament_id) as Tmnts,
-#         count(tens) as GP,
-#         sum(ifnull(tuh, 20)) as TUH,
-#         sum(ifnull(powers, 0)) as \"15\", sum(tens) as \"10\", sum(negs) as \"-5\",
-#         printf("%.1f", sum(ifnull(powers, 0))/count(tens)) as \"15/G\",
-#         printf("%.1f", sum(tens)/count(tens)) as \"10/G\",
-#         printf("%.1f", sum(negs)/count(tens)) as \"-5/G\",
-#         printf("%.3f", (sum(ifnull(powers, 0)) + sum(tens))/sum(ifnull(tuh, 20))) as \"TU%\",
-#         printf("%.2f", avg(pts)) as PPG from 
-#         player_games
-#         LEFT JOIN schools on player_games.school_id = schools.school_id
-#         LEFT JOIN tournaments on player_games.tournament_id = tournaments.tournament_id
-#         INNER JOIN players on player_games.player_id = players.player_id
-#         LEFT JOIN people on players.person_id = people.person_id
-#         WHERE schools.slug = '{team_slug}'
-#         GROUP BY 1, 2, 3
-#     """)
 
-#     rows = cur.fetchall()
-#     keys = [k[0] for k in cur.description]
-#     player_res = [dict(zip(keys, row)) for row in rows]
-#     for player in player_res:
-#         if player['person_slug']:
-#             player['Player'] = f"<a href = '../players/{player['person_slug']}'>{player['Player']}</a>"
+    cur.execute(f"""SELECT 
+        team as Team,
+        count(distinct team_games.tournament_id) as Tmnts,
+        count(result) as GP,
+        sum(case result when 1 then 1 else 0 end) || '-' ||
+        sum(case result when 0 then 1 else 0 end) as \"W-L\",
+        printf("%.3f", avg(result)) as \"Win%\",
+        sum(ifnull(tuh, 20)) as TUH,
+        sum(powers) as \"15\", sum(tens) as \"10\", sum(negs) as \"-5\",
+        printf("%.1f", sum(powers)/count(result)) as \"15/G\",
+        printf("%.1f", sum(tens)/count(result)) as \"10/G\",
+        printf("%.1f", sum(negs)/count(result)) as \"-5/G\",
+        printf("%.3f", (sum(ifnull(powers, 0)) + sum(tens))/sum(ifnull(tuh, 20))) as \"TU%\",
+        printf("%.1f", avg(total_pts)) as PPG, 
+        printf("%.2f", sum(bonus_pts)/sum(bonuses_heard)) as PPB from 
+        team_games
+        LEFT JOIN schools on team_games.school_id = schools.school_id
+        LEFT JOIN teams on team_games.team_id = teams.team_id
+        LEFT JOIN tournaments on team_games.tournament_id = tournaments.tournament_id
+        LEFT JOIN sets on tournaments.set_id = sets.set_id
+        LEFT JOIN sites on tournaments.site_id = sites.site_id
+        WHERE slug = '{team_slug}'
+        GROUP BY 1
+        ORDER BY 3 desc""")
 
-#     cur.execute(f"""
-#     SELECT 
-#         tournaments.tournament_id,
-#         sets.year as Year,
-#         date as Date,
-#         \"set\" as \"Set\",
-#         count(distinct teams.team) as Teams
-#         from team_games
-#         LEFT JOIN teams on team_games.team_id = teams.team_id
-#         LEFT JOIN tournaments on team_games.tournament_id = tournaments.tournament_id
-#         LEFT JOIN tournament_results on team_games.tournament_id = tournament_results.tournament_id
-#         and team_games.team_id = tournament_results.team_id
-#         LEFT JOIN sets on tournaments.set_id = sets.set_id
-#         LEFT JOIN sites on tournaments.site_id = sites.site_id
-#         LEFT JOIN schools on sites.school_id = schools.school_id
-#         WHERE schools.slug = '{team_slug}'
-#         GROUP BY 1, 2, 3, 4
-#         ORDER BY date desc
-#     """)
+    rows = cur.fetchall()
+    keys = [k[0] for k in cur.description]
+    teams_res = [dict(zip(keys, row)) for row in rows]
 
-#     rows = cur.fetchall()
-#     keys = [k[0] for k in cur.description]
-#     hosting_res = [dict(zip(keys, row)) for row in rows]
-#     for en in hosting_res:
-#         en['Teams'] = f"<a href = '../tournaments/{utils.string(en['tournament_id'])}'>{en['Teams']}</a>"
+    cur.execute(f"""
+        SELECT 
+        tournaments.date || ': ' || tournaments.tournament_name as Tournament, team_games.tournament_id,
+        sets.year as Year,
+        sets.year || ' ' || \"set\" || ' ' || site as tournament_name,
+        date as Date,
+        teams.team as Team,
+        players as Players,
+        cast(rank as int) || '/' || cast(num_teams as int) as Finish,
+        count(result) as GP,
+        sum(case result when 1 then 1 else 0 end) || '-' ||
+        sum(case result when 0 then 1 else 0 end) as \"W-L\",
+        sum(ifnull(tuh, 20)) as TUH,
+        sum(powers) as \"15\", sum(tens) as \"10\", sum(negs) as \"-5\",
+        printf("%.1f", sum(powers)/count(result)) as \"15/G\",
+        printf("%.1f", sum(tens)/count(result)) as \"10/G\",
+        printf("%.1f", sum(negs)/count(result)) as \"-5/G\",
+        printf("%.3f", (sum(ifnull(powers, 0)) + sum(tens))/sum(ifnull(tuh, 20))) as \"TU%\",
+        printf("%.1f", avg(total_pts)) as PPG, 
+        printf("%.2f", sum(bonus_pts)/sum(bonuses_heard)) as PPB,
+        printf("%.2f", a_value) as \"A-Value\" 
+        from team_games
+        LEFT JOIN schools on team_games.school_id = schools.school_id
+        LEFT JOIN teams on team_games.team_id = teams.team_id
+        LEFT JOIN tournaments on team_games.tournament_id = tournaments.tournament_id
+        LEFT JOIN tournament_results on team_games.tournament_id = tournament_results.tournament_id
+        and team_games.team_id = tournament_results.team_id
+        LEFT JOIN sets on tournaments.set_id = sets.set_id
+        LEFT JOIN sites on tournaments.site_id = sites.site_id
+        LEFT JOIN (SELECT tournament_id, team_id, 
+        group_concat(distinct ' ' || coalesce(fname|| ' ' || lname, player_games.player)) as players
+        from player_games
+        LEFT JOIN schools on player_games.school_id = schools.school_id
+        LEFT JOIN players on player_games.player_id = players.player_id
+        LEFT JOIN people on players.person_id = people.person_id
+        WHERE schools.slug = '{team_slug}'
+        GROUP BY 1, 2) player_games
+        on team_games.tournament_id = player_games.tournament_id
+        and team_games.team_id = player_games.team_id
+        WHERE schools.slug = '{team_slug}'
+        GROUP BY 1, 2, 3, 4, 5, 6
+        ORDER BY date desc""")
 
-#     res = {
-#         'Summary': summary_res,
-#         'Teams': teams_res,
-#         'Players': player_res,
-#         'Tournaments': tournament_res,
-#         'Hosting': hosting_res
-#     }
+    rows = cur.fetchall()
+    keys = [k[0] for k in cur.description]
+    tournament_res = [dict(zip(keys, row)) for row in rows]
+    for tournament in tournament_res:
+        if tournament['tournament_id']:
+            tournament['Team'] = f"<a href = '../tournaments/{str(tournament['tournament_id']).replace('.0', '')}/team-detail#{utils.slug(tournament['Team'])}'>{tournament['Team']}</a>"
+            tournament['Tournament'] = f"<a href = '../tournaments/{str(tournament['tournament_id']).replace('.0', '')}'>{tournament['Tournament']}</a>"
 
-#     db.collection("schools").document(team_slug).set(res)
-#     print(team_slug)
+    cur.execute(f"""
+    SELECT 
+        fname || ' ' || lname as Player, 
+        schools.slug, people.slug as person_slug,
+        strftime('%Y', min(date)) || '-' || strftime('%Y', max(date)) as Yrs,
+        count(distinct player_games.tournament_id) as Tmnts,
+        count(tens) as GP,
+        sum(ifnull(tuh, 20)) as TUH,
+        sum(ifnull(powers, 0)) as \"15\", sum(tens) as \"10\", sum(negs) as \"-5\",
+        printf("%.1f", sum(ifnull(powers, 0))/count(tens)) as \"15/G\",
+        printf("%.1f", sum(tens)/count(tens)) as \"10/G\",
+        printf("%.1f", sum(negs)/count(tens)) as \"-5/G\",
+        printf("%.3f", (sum(ifnull(powers, 0)) + sum(tens))/sum(ifnull(tuh, 20))) as \"TU%\",
+        printf("%.2f", avg(pts)) as PPG from 
+        player_games
+        LEFT JOIN schools on player_games.school_id = schools.school_id
+        LEFT JOIN tournaments on player_games.tournament_id = tournaments.tournament_id
+        INNER JOIN players on player_games.player_id = players.player_id
+        LEFT JOIN people on players.person_id = people.person_id
+        WHERE schools.slug = '{team_slug}'
+        GROUP BY 1, 2, 3
+    """)
+
+    rows = cur.fetchall()
+    keys = [k[0] for k in cur.description]
+    player_res = [dict(zip(keys, row)) for row in rows]
+    for player in player_res:
+        if player['person_slug']:
+            player['Player'] = f"<a href = '../players/{player['person_slug']}'>{player['Player']}</a>"
+
+    cur.execute(f"""
+    SELECT 
+        tournaments.tournament_id,
+        sets.year as Year,
+        date as Date,
+        \"set\" as \"Set\",
+        count(distinct teams.team) as Teams
+        from team_games
+        LEFT JOIN teams on team_games.team_id = teams.team_id
+        LEFT JOIN tournaments on team_games.tournament_id = tournaments.tournament_id
+        LEFT JOIN tournament_results on team_games.tournament_id = tournament_results.tournament_id
+        and team_games.team_id = tournament_results.team_id
+        LEFT JOIN sets on tournaments.set_id = sets.set_id
+        LEFT JOIN sites on tournaments.site_id = sites.site_id
+        LEFT JOIN schools on sites.school_id = schools.school_id
+        WHERE schools.slug = '{team_slug}'
+        GROUP BY 1, 2, 3, 4
+        ORDER BY date desc
+    """)
+
+    rows = cur.fetchall()
+    keys = [k[0] for k in cur.description]
+    hosting_res = [dict(zip(keys, row)) for row in rows]
+    for en in hosting_res:
+        en['Teams'] = f"<a href = '../tournaments/{utils.string(en['tournament_id'])}'>{en['Teams']}</a>"
+
+    res = {
+        'Summary': summary_res,
+        'Teams': teams_res,
+        'Players': player_res,
+        'Tournaments': tournament_res,
+        'Hosting': hosting_res
+    }
+
+    db.collection("schools").document(team_slug).update(res)
+    print(team_slug)
 
 ## Tournaments
-# cur.execute("SELECT tournament_id from tournaments")
-# tournament_slugs = [string(r[0]) for r in cur.fetchall() if r[0] is not None]
+cur.execute("SELECT tournament_id from tournaments")
+tournament_slugs = [string(r[0]) for r in cur.fetchall() if r[0] is not None]
 
-# for tournament_id in tournament_slugs:
-#     cur.execute(f"""
-#         SELECT 
-#            date, tournaments.tournament_name, naqt_id
-#            from tournaments 
-#            LEFT JOIN sets on tournaments.set_id = sets.set_id
-#            LEFT JOIN sites on tournaments.site_id = sites.site_id
-#            WHERE tournaments.tournament_id = {tournament_id}
-#         """)
+for tournament_id in tournament_slugs:
+    cur.execute(f"""
+        SELECT 
+           date, tournaments.tournament_name, naqt_id
+           from tournaments 
+           LEFT JOIN sets on tournaments.set_id = sets.set_id
+           LEFT JOIN sites on tournaments.site_id = sites.site_id
+           WHERE tournaments.tournament_id = {tournament_id}
+        """)
 
-#     rows = cur.fetchall()
-#     keys = [k[0] for k in cur.description]
-#     summary_res = [dict(zip(keys, row)) for row in rows]
+    rows = cur.fetchall()
+    keys = [k[0] for k in cur.description]
+    summary_res = [dict(zip(keys, row)) for row in rows]
 
-#     cur.execute(f"""SELECT 
-#         rank as Rank,
-#         teams.team as Team,
-#         schools.school_name as School, slug, bracket,
-#         count(result) as GP,
-#         sum(case result when 1 then 1 else 0 end) || '-' ||
-#         sum(case result when 0 then 1 else 0 end) as \"W-L\",
-#         sum(ifnull(tuh, 20)) as TUH,
-#         sum(powers) as \"15\", sum(tens) as \"10\", sum(negs) as \"-5\",
-#         printf("%.2f", sum(powers)/count(result)) as \"15/G\",
-#         printf("%.2f", sum(tens)/count(result)) as \"10/G\",
-#         printf("%.2f", sum(negs)/count(result)) as \"-5/G\",
-#         printf("%.3f", (sum(ifnull(powers, 0)) + sum(tens))/sum(ifnull(tuh, 20))) as \"TU%\",
-#         printf("%.1f", avg(total_pts)) as PPG, 
-#         printf("%.2f", sum(bonus_pts)/sum(bonuses_heard)) as PPB,
-#         printf("%.1f", a_value) as \"A-Value\" 
-#         from team_games
-#         LEFT JOIN teams on team_games.team_id = teams.team_id
-#         LEFT JOIN schools on teams.school_id = schools.school_id
-#         LEFT JOIN tournaments on team_games.tournament_id = tournaments.tournament_id
-#         LEFT JOIN tournament_results on team_games.tournament_id = tournament_results.tournament_id
-#         and team_games.team_id = tournament_results.team_id
-#         LEFT JOIN sets on tournaments.set_id = sets.set_id
-#         LEFT JOIN sites on tournaments.site_id = sites.site_id
-#         WHERE team_games.tournament_id = {tournament_id}
-#         GROUP BY 1, 2, 3, 4, 5
-#     """)
+    cur.execute(f"""SELECT 
+        rank as Rank,
+        teams.team as Team,
+        schools.school_name as School, slug, bracket,
+        count(result) as GP,
+        sum(case result when 1 then 1 else 0 end) || '-' ||
+        sum(case result when 0 then 1 else 0 end) as \"W-L\",
+        sum(ifnull(tuh, 20)) as TUH,
+        sum(powers) as \"15\", sum(tens) as \"10\", sum(negs) as \"-5\",
+        printf("%.2f", sum(powers)/count(result)) as \"15/G\",
+        printf("%.2f", sum(tens)/count(result)) as \"10/G\",
+        printf("%.2f", sum(negs)/count(result)) as \"-5/G\",
+        printf("%.3f", (sum(ifnull(powers, 0)) + sum(tens))/sum(ifnull(tuh, 20))) as \"TU%\",
+        printf("%.1f", avg(total_pts)) as PPG, 
+        printf("%.2f", sum(bonus_pts)/sum(bonuses_heard)) as PPB,
+        printf("%.1f", a_value) as \"A-Value\" 
+        from team_games
+        LEFT JOIN teams on team_games.team_id = teams.team_id
+        LEFT JOIN schools on teams.school_id = schools.school_id
+        LEFT JOIN tournaments on team_games.tournament_id = tournaments.tournament_id
+        LEFT JOIN tournament_results on team_games.tournament_id = tournament_results.tournament_id
+        and team_games.team_id = tournament_results.team_id
+        LEFT JOIN sets on tournaments.set_id = sets.set_id
+        LEFT JOIN sites on tournaments.site_id = sites.site_id
+        WHERE team_games.tournament_id = {tournament_id}
+        GROUP BY 1, 2, 3, 4, 5
+    """)
 
-#     rows = cur.fetchall()
-#     keys = [k[0] for k in cur.description]
-#     standings_res = [dict(zip(keys, row)) for row in rows]
-#     for team in standings_res:
-#         if team['slug']:
-#             team['School'] = f"<a href = '../schools/{team['slug']}'>{team['School']}</a>"
-#         team['Team'] = f"<a href = '/tournaments/{tournament_id}/team-detail#{utils.slug(team['Team'])}'>{team['Team']}</a>"
+    rows = cur.fetchall()
+    keys = [k[0] for k in cur.description]
+    standings_res = [dict(zip(keys, row)) for row in rows]
+    for team in standings_res:
+        if team['slug']:
+            team['School'] = f"<a href = '../schools/{team['slug']}'>{team['School']}</a>"
+        team['Team'] = f"<a href = '/tournaments/{tournament_id}/team-detail#{utils.slug(team['Team'])}'>{team['Team']}</a>"
 
-#     cur.execute(f"""
-#     SELECT *, printf("%.2f", rawPPG) as PPG from (
-#     SELECT
-#         coalesce(fname|| ' ' || lname, player_games.player) as Player,
-#         coalesce(fname|| ' ' || lname, player_games.player) as raw_player,
-#         slug,
-#         team as Team,
-#         count(tens) as GP,
-#         sum(ifnull(tuh, 20)) as TUH,
-#         sum(powers) as \"15\", 
-#         sum(tens) as \"10\", 
-#         sum(negs) as \"-5\",
-#         printf("%.2f", sum(powers)/count(tens)) as \"15/G\",
-#         printf("%.2f", sum(tens)/count(tens)) as \"10/G\",
-#         printf("%.2f", sum(negs)/count(tens)) as \"-5/G\",
-#         printf("%.2f", sum(powers)/sum(negs)) as \"P/N\",
-#         printf("%.2f", (sum(ifnull(powers, 0)) + sum(tens))/sum(negs)) as \"G/N\",
-#         printf("%.3f", (sum(ifnull(powers, 0)) + sum(tens))/sum(ifnull(tuh, 20))) as \"TU%\",
-#         avg(pts) as rawPPG from
-#         player_games
-#         LEFT JOIN teams on player_games.team_id = teams.team_id
-#         LEFT JOIN tournaments on player_games.tournament_id = tournaments.tournament_id
-#         LEFT JOIN sets on tournaments.set_id = sets.set_id
-#         LEFT JOIN sites on tournaments.site_id = sites.site_id
-#         LEFT JOIN players on player_games.player_id = players.player_id
-#         LEFT JOIN people on players.person_id = people.person_id
-#         WHERE player_games.tournament_id = {tournament_id}
-#         GROUP BY 1, 2, 3, 4
-#         ORDER BY rawPPG desc)
-#     """)
+    cur.execute(f"""
+    SELECT *, printf("%.2f", rawPPG) as PPG from (
+    SELECT
+        coalesce(fname|| ' ' || lname, player_games.player) as Player,
+        coalesce(fname|| ' ' || lname, player_games.player) as raw_player,
+        slug,
+        team as Team,
+        count(tens) as GP,
+        sum(ifnull(tuh, 20)) as TUH,
+        sum(powers) as \"15\", 
+        sum(tens) as \"10\", 
+        sum(negs) as \"-5\",
+        printf("%.2f", sum(powers)/count(tens)) as \"15/G\",
+        printf("%.2f", sum(tens)/count(tens)) as \"10/G\",
+        printf("%.2f", sum(negs)/count(tens)) as \"-5/G\",
+        printf("%.2f", sum(powers)/sum(negs)) as \"P/N\",
+        printf("%.2f", (sum(ifnull(powers, 0)) + sum(tens))/sum(negs)) as \"G/N\",
+        printf("%.3f", (sum(ifnull(powers, 0)) + sum(tens))/sum(ifnull(tuh, 20))) as \"TU%\",
+        avg(pts) as rawPPG from
+        player_games
+        LEFT JOIN teams on player_games.team_id = teams.team_id
+        LEFT JOIN tournaments on player_games.tournament_id = tournaments.tournament_id
+        LEFT JOIN sets on tournaments.set_id = sets.set_id
+        LEFT JOIN sites on tournaments.site_id = sites.site_id
+        LEFT JOIN players on player_games.player_id = players.player_id
+        LEFT JOIN people on players.person_id = people.person_id
+        WHERE player_games.tournament_id = {tournament_id}
+        GROUP BY 1, 2, 3, 4
+        ORDER BY rawPPG desc)
+    """)
 
-#     rows = cur.fetchall()
-#     keys = [k[0] for k in cur.description]
-#     players_res = [dict(zip(keys, row)) for row in rows]
-#     for team in players_res:
-#         team['Player'] = f"<a href = '/tournaments/{tournament_id}/player-detail#{utils.slug(team['Player']) + '-' + utils.slug(team['Team'])}'>{team['Player']}</a>"
-#         team['Team'] = f"<a href = '/tournaments/{tournament_id}/team-detail#{utils.slug(team['Team'])}'>{team['Team']}</a>"
+    rows = cur.fetchall()
+    keys = [k[0] for k in cur.description]
+    players_res = [dict(zip(keys, row)) for row in rows]
+    for team in players_res:
+        team['Player'] = f"<a href = '/tournaments/{tournament_id}/player-detail#{utils.slug(team['Player']) + '-' + utils.slug(team['Team'])}'>{team['Player']}</a>"
+        team['Team'] = f"<a href = '/tournaments/{tournament_id}/team-detail#{utils.slug(team['Team'])}'>{team['Team']}</a>"
 
-#     cur.execute(f"""
-#     SELECT
-#         CAST(REPLACE(round, 'Round ', '') as int) as Round,
-#         team as Team,
-#         game_num, game_id,
-#         opponent_team as Opponent,
-#         case result when 1 then 'W' when 0 then 'L' else 'T' end as Result,
-#         total_pts as PF, opp_pts as PA, powers as \"15\", tens as \"10\",
-#         negs as \"-5\", ifnull(tuh, 20) as TUH,
-#         printf("%.2f", total_pts/ifnull(tuh, 20)) as PPTUH, 
-#         bonuses_heard as BHrd, bonus_pts as BPts,
-#         printf("%.2f", bonus_pts/bonuses_heard) as PPB
-#         from team_games
-#         LEFT JOIN teams on team_games.team_id = teams.team_id
-#         LEFT JOIN (select team_id, team as opponent_team from teams) a on team_games.opponent_id = a.team_id
-#         where team_games.tournament_id = {tournament_id}
-#         order by Team, Round
-#     """)
+    cur.execute(f"""
+    SELECT
+        CAST(REPLACE(round, 'Round ', '') as int) as Round,
+        team as Team,
+        game_num, game_id,
+        opponent_team as Opponent,
+        case result when 1 then 'W' when 0 then 'L' else 'T' end as Result,
+        total_pts as PF, opp_pts as PA, powers as \"15\", tens as \"10\",
+        negs as \"-5\", ifnull(tuh, 20) as TUH,
+        printf("%.2f", total_pts/ifnull(tuh, 20)) as PPTUH, 
+        bonuses_heard as BHrd, bonus_pts as BPts,
+        printf("%.2f", bonus_pts/bonuses_heard) as PPB
+        from team_games
+        LEFT JOIN teams on team_games.team_id = teams.team_id
+        LEFT JOIN (select team_id, team as opponent_team from teams) a on team_games.opponent_id = a.team_id
+        where team_games.tournament_id = {tournament_id}
+        order by Team, Round
+    """)
 
-#     rows = cur.fetchall()
-#     keys = [k[0] for k in cur.description]
-#     team_detail_team_res = [dict(zip(keys, row)) for row in rows]
-#     for team in team_detail_team_res:
-#         team['Result'] = f"<a href = '../../games/{utils.string(team['game_id'])}'>{team['Result']}</a>"
-#         if team['Opponent']:
-#             team['Opponent'] = f"<a href = '/tournaments/{tournament_id}/team-detail#{utils.slug(team['Opponent'])}'>{team['Opponent']}</a>"
+    rows = cur.fetchall()
+    keys = [k[0] for k in cur.description]
+    team_detail_team_res = [dict(zip(keys, row)) for row in rows]
+    for team in team_detail_team_res:
+        team['Result'] = f"<a href = '../../games/{utils.string(team['game_id'])}'>{team['Result']}</a>"
+        if team['Opponent']:
+            team['Opponent'] = f"<a href = '/tournaments/{tournament_id}/team-detail#{utils.slug(team['Opponent'])}'>{team['Opponent']}</a>"
 
 
-#     cur.execute(f"""
-#     SELECT 
-#         coalesce(fname|| ' ' || lname, player_games.player) as Player, 
-#         team as Team,
-#         count(tens) as GP,
-#         sum(ifnull(tuh, 20)) as TUH,
-#         sum(powers) as \"15\", sum(tens) as \"10\", sum(negs) as \"-5\",
-#         printf("%.2f", sum(powers)/count(tens)) as \"15/G\",
-#         printf("%.2f", sum(tens)/count(tens)) as \"10/G\",
-#         printf("%.2f", sum(negs)/count(tens)) as \"-5/G\",
-#         printf("%.2f", sum(powers)/sum(negs)) as \"P/N\",
-#         printf("%.2f", (sum(ifnull(powers, 0)) + sum(tens))/sum(negs)) as \"G/N\",
-#         printf("%.3f", (sum(ifnull(powers, 0)) + sum(tens))/sum(ifnull(tuh, 20))) as \"TU%\",
-#         sum(pts) as Pts,
-#         printf("%.2f", avg(pts)) as PPG from 
-#         player_games
-#         LEFT JOIN teams on player_games.team_id = teams.team_id
-#         LEFT JOIN tournaments on player_games.tournament_id = tournaments.tournament_id
-#         LEFT JOIN players on player_games.player_id = players.player_id
-#         LEFT JOIN people on players.person_id = people.person_id
-#         where player_games.tournament_id = {tournament_id}
-#         GROUP BY 1, 2
-#         order by Team, Player
-#     """)
+    cur.execute(f"""
+    SELECT 
+        coalesce(fname|| ' ' || lname, player_games.player) as Player, 
+        team as Team,
+        count(tens) as GP,
+        sum(ifnull(tuh, 20)) as TUH,
+        sum(powers) as \"15\", sum(tens) as \"10\", sum(negs) as \"-5\",
+        printf("%.2f", sum(powers)/count(tens)) as \"15/G\",
+        printf("%.2f", sum(tens)/count(tens)) as \"10/G\",
+        printf("%.2f", sum(negs)/count(tens)) as \"-5/G\",
+        printf("%.2f", sum(powers)/sum(negs)) as \"P/N\",
+        printf("%.2f", (sum(ifnull(powers, 0)) + sum(tens))/sum(negs)) as \"G/N\",
+        printf("%.3f", (sum(ifnull(powers, 0)) + sum(tens))/sum(ifnull(tuh, 20))) as \"TU%\",
+        sum(pts) as Pts,
+        printf("%.2f", avg(pts)) as PPG from 
+        player_games
+        LEFT JOIN teams on player_games.team_id = teams.team_id
+        LEFT JOIN tournaments on player_games.tournament_id = tournaments.tournament_id
+        LEFT JOIN players on player_games.player_id = players.player_id
+        LEFT JOIN people on players.person_id = people.person_id
+        where player_games.tournament_id = {tournament_id}
+        GROUP BY 1, 2
+        order by Team, Player
+    """)
 
-#     rows = cur.fetchall()
-#     keys = [k[0] for k in cur.description]
-#     team_detail_player_res = [dict(zip(keys, row)) for row in rows]
-#     for team in team_detail_player_res:
-#         team['Player'] = f"<a href = '/tournaments/{tournament_id}/player-detail#{utils.slug(team['Player']) + '-' + utils.slug(team['Team'])}'>{team['Player']}</a>"
+    rows = cur.fetchall()
+    keys = [k[0] for k in cur.description]
+    team_detail_player_res = [dict(zip(keys, row)) for row in rows]
+    for team in team_detail_player_res:
+        team['Player'] = f"<a href = '/tournaments/{tournament_id}/player-detail#{utils.slug(team['Player']) + '-' + utils.slug(team['Team'])}'>{team['Player']}</a>"
 
-#     cur.execute(f"""SELECT
-# coalesce(fname|| ' ' || lname, player_games.player) as player, team,
-# CAST(REPLACE(games.round, 'Round ', '') as int) as Round,
-# opponent_team as Opponent,
-# player_games.game_num, player_games.game_id,
-# case result when 1 then 'W' when 0 then 'L' else 'T' end as Result,
-# ifnull(player_games.tuh, 20) as TUH,
-# player_games.powers as \"15\", player_games.tens as \"10\", player_games.negs as \"-5\", pts as Pts
-# from player_games
-# LEFT JOIN team_games on player_games.game_id = team_games.game_id
-# and player_games.team_id = team_games.team_id
-# LEFT JOIN (select team_id, team as opponent_team from teams) a on team_games.opponent_id = a.team_id
-#         LEFT JOIN players on player_games.player_id = players.player_id
-#         LEFT JOIN people on players.person_id = people.person_id
-#         LEFT JOIN teams on player_games.team_id = teams.team_id
-#         left join games on player_games.game_id = games.game_id
-# WHERE player_games.tournament_id = {tournament_id}
-#         order by team, player, Round
-#     """)
+    cur.execute(f"""SELECT
+coalesce(fname|| ' ' || lname, player_games.player) as player, team,
+CAST(REPLACE(games.round, 'Round ', '') as int) as Round,
+opponent_team as Opponent,
+player_games.game_num, player_games.game_id,
+case result when 1 then 'W' when 0 then 'L' else 'T' end as Result,
+ifnull(player_games.tuh, 20) as TUH,
+player_games.powers as \"15\", player_games.tens as \"10\", player_games.negs as \"-5\", pts as Pts
+from player_games
+LEFT JOIN team_games on player_games.game_id = team_games.game_id
+and player_games.team_id = team_games.team_id
+LEFT JOIN (select team_id, team as opponent_team from teams) a on team_games.opponent_id = a.team_id
+        LEFT JOIN players on player_games.player_id = players.player_id
+        LEFT JOIN people on players.person_id = people.person_id
+        LEFT JOIN teams on player_games.team_id = teams.team_id
+        left join games on player_games.game_id = games.game_id
+WHERE player_games.tournament_id = {tournament_id}
+        order by team, player, Round
+    """)
 
-#     rows = cur.fetchall()
-#     keys = [k[0] for k in cur.description]
-#     player_detail_res = [dict(zip(keys, row)) for row in rows]
-#     for team in player_detail_res:
-#         team['Result'] = f"<a href = '../../games/{utils.string(team['game_id'])}'>{team['Result']}</a>"
-#         if team['Opponent']:
-#             team['Opponent'] = f"<a href = '/tournaments/{tournament_id}/team-detail#{utils.slug(team['Opponent'])}'>{team['Opponent']}</a>"
+    rows = cur.fetchall()
+    keys = [k[0] for k in cur.description]
+    player_detail_res = [dict(zip(keys, row)) for row in rows]
+    for team in player_detail_res:
+        team['Result'] = f"<a href = '../../games/{utils.string(team['game_id'])}'>{team['Result']}</a>"
+        if team['Opponent']:
+            team['Opponent'] = f"<a href = '/tournaments/{tournament_id}/team-detail#{utils.slug(team['Opponent'])}'>{team['Opponent']}</a>"
 
-#     res = {
-#         'Summary': summary_res,
-#         'Standings': standings_res,
-#         'Players': players_res,
-#         'Team Detail Teams': team_detail_team_res,
-#         'Team Detail Players': team_detail_player_res,
-#         'Player Detail': player_detail_res
-#     }
-#     for k, v in res.items():
-#         db.collection("tournaments").document(tournament_id).collection('results').document(k).set({k:v})
-#     print(tournament_id)
+    res = {
+        'Summary': summary_res,
+        'Standings': standings_res,
+        'Players': players_res,
+        'Team Detail Teams': team_detail_team_res,
+        'Team Detail Players': team_detail_player_res,
+        'Player Detail': player_detail_res
+    }
+    for k, v in res.items():
+        db.collection("tournaments").document(tournament_id).collection('results').document(k).set({k:v})
+    print(tournament_id)
 
-# ## Games
+## Games
 # cur.execute("select game_id from games")
 # game_slugs = [string(r[0]) for r in cur.fetchall() if r[0] is not None]
 
 # for game_id in game_slugs:
-#     print(game_id)
-#     cur.execute(
-#         f"""
-#         SELECT
-#            games.round, teams.team, tournaments.tournament_name, tournaments.tournament_id
-#            from team_games
-#            LEFT JOIN games on team_games.game_id = games.game_id
-#            LEFT JOIN tournaments on games.tournament_id = tournaments.tournament_id
-#            LEFT JOIN teams on team_games.team_id = teams.team_id
-#            LEFT JOIN sets on tournaments.set_id = sets.set_id
-#            LEFT JOIN sites on tournaments.site_id = sites.site_id
-#            WHERE team_games.game_id = {game_id}
-#         """
-#     )
+    # cur.execute(
+    #     f"""
+    #     SELECT
+    #        games.round, teams.team, tournaments.tournament_name, tournaments.tournament_id
+    #        from team_games
+    #        LEFT JOIN games on team_games.game_id = games.game_id
+    #        LEFT JOIN tournaments on games.tournament_id = tournaments.tournament_id
+    #        LEFT JOIN teams on team_games.team_id = teams.team_id
+    #        LEFT JOIN sets on tournaments.set_id = sets.set_id
+    #        LEFT JOIN sites on tournaments.site_id = sites.site_id
+    #        WHERE team_games.game_id = {game_id}
+    #     """
+    # )
 
-#     rows = cur.fetchall()
-#     keys = [k[0] for k in cur.description]
-#     summary_res = [dict(zip(keys, row)) for row in rows]
+    # rows = cur.fetchall()
+    # keys = [k[0] for k in cur.description]
+    # summary_res = [dict(zip(keys, row)) for row in rows]
 
 #     cur.execute(
 #         f"""SELECT
@@ -2291,7 +2295,7 @@ order by difficulty, Teams
 #     for team in players_res:
 #         team[
 #             "Player"
-#         ] = f"<a href = '../tournaments/{str(team['tournament_id']).replace('.0', '')}#{slug(team['Player']) + '-' + slug(team['team'])}'>{team['Player']}</a>"
+#         ] = f"<a href = '../tournaments/{str(team['tournament_id']).replace('.0', '')}/player-detail#{slug(team['Player']) + '-' + slug(team['team'])}'>{team['Player']}</a>"
 
 #     cur.execute(
 #         f"""SELECT
@@ -2308,7 +2312,11 @@ order by difficulty, Teams
 #     keys = [k[0] for k in cur.description]
 #     teams_res = [dict(zip(keys, row)) for row in rows]
 
-#     res = {"Summary": summary_res, "Players": players_res, "Teams": teams_res}
+    # res = {
+    #     # "Summary": summary_res, 
+    #     "Players": players_res, 
+    #     # "Teams": teams_res
+    #     }
 
-#     db.collection("games").document(game_id).set(res)
-#     print(game_id)
+    # db.collection("games").document(game_id).update(res)
+    # print(game_id)
