@@ -17,6 +17,7 @@ class AllSeasons(Resource):
         rows = cur.fetchall()
         keys = [k[0] for k in cur.description]
         res = [dict(zip(keys, row)) for row in rows]
+        res = [year for year in res if year['year'] not in ['08-09', '09-10', '10-11']]
         for season in res:
             season['year'] = f"<a href = '../seasons/{season['year']}'>{season['year']}</a>"
             
