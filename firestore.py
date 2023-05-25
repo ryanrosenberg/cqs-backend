@@ -24,13 +24,13 @@ def string(int):
 con = sq.connect("stats.db")
 cur = con.cursor()
 
-refresh_circuits = True
+refresh_circuits = False
 refresh_players = ['young-fenimore-lee']
 refresh_records = False
-refresh_sets = True
+refresh_sets = False
 refresh_schools = ['new-school']
-refresh_seasons = True
-refresh_tournaments = [1636]
+refresh_seasons = False
+refresh_tournaments = ['1636']
 refresh_games = False
 
 # Circuits
