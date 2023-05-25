@@ -99,11 +99,6 @@ if refresh_circuits:
 
         rows = cur.fetchall()
         keys = [k[0] for k in cur.description]
-        print(pd.DataFrame([dict(zip(keys, row)) for row in rows]),
-              pd.DataFrame(schools_res))
-        sites_res = pd.DataFrame([dict(zip(keys, row)) for row in rows]).merge(
-            pd.DataFrame(schools_res)[["school_id", "last_active"]], on="school_id"
-        )
         sites_res["last_active"] = np.fmax(sites_res["last_active"], sites_res["last_host"])
         sites_res = sites_res.to_dict("records")
 
